@@ -1,9 +1,9 @@
 import { User } from "../models/user";
 import { Request,Response } from "express";
-import { zodUserSchema } from "../zod/user";
+import { zodUserSchema } from "../zod/user.zod";
 import { z } from "zod"
 import { comparePassword, hashPassword } from "../utils/password";
-import { userType } from "../zod/user";
+import { userType } from "../zod/user.zod";
 
 export const createUser = async( req: Request, res: Response) => {
     try{

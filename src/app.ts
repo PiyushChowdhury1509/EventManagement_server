@@ -12,8 +12,9 @@ app.use(compression());
 app.use(express.json());
 app.use(cookieParser());
 
-import userRouter from './routes/user.route';
-app.use('/api/v1/user',userRouter);
+import authRouter from './routes/auth.route';
+app.use('/api/v1/user',authRouter);
+
 
 connectDB()
 .then(()=>{
