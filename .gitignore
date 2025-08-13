@@ -1,0 +1,44 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# Build artifacts
+build/
+dist/
+out/
+tmp/
+*.js.map # Source maps for compiled JavaScript
+*.d.ts # TypeScript declaration files (if not intended for distribution)
+
+# TypeScript specific
+*.tsbuildinfo # TypeScript build info files
+tsconfig.tsbuildinfo # Root tsconfig build info
+
+# Editor/IDE specific
+.vscode/ # VS Code specific files (e.g., settings, launch configurations)
+.idea/ # IntelliJ IDEA specific files
+.DS_Store # macOS specific files
+Thumbs.db # Windows specific files
+
+# Test coverage
+coverage/
+
+# Misc
+.eslintcache
+.nyc_output/
+.node_repl_history
