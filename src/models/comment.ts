@@ -25,12 +25,10 @@ const commentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         required: true
     },
-    likes: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        }
-    ]
+    likeCount: {
+        type: Number,
+        default: 0
+    }
 }, { timestamps: true });
 
 export const Comment = mongoose.model('Comment',commentSchema);

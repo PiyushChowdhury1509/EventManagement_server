@@ -8,7 +8,7 @@ const objectIdSchema = z
 });
 
 
-    const stringOrNumber = z.union([objectIdSchema.optional(), z.null()]);
+const stringOrNumber = z.union([objectIdSchema.optional(), z.null()]);
 
 type objectIdSchemaType = z.infer<typeof objectIdSchema>
 
@@ -27,8 +27,9 @@ export const zodNoticeSchema = z.object({
     .min(1)
     .optional(),
 
-    likes: z
-    .optional(z.array(objectIdSchema)),
+    likeCount: z
+    .number()
+    .optional(),
 
     terminationDate: z
     .coerce.date()

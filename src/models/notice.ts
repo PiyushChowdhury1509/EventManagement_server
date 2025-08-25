@@ -6,7 +6,7 @@ export interface INotice {
   content: string;
   category: string;
   createdBy: string;
-  likes: string[];
+  likeCount: number,
   terminationDate: Date;
 }
 const noticeSchema = new mongoose.Schema(
@@ -27,14 +27,9 @@ const noticeSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    likes: {
-      type: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-      ],
-      default: [],
+    likeCount: {
+      type: Number,
+      default: 0
     },
     terminationDate: {
       type: Date,
