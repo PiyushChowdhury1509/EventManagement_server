@@ -15,6 +15,9 @@ app.use(cookieParser());
 import authRouter from './routes/auth.route';
 app.use('/api/v1/user',authRouter);
 
+import adminRouter from './routes/admin.route';
+app.use('/api/v1/admin',adminRouter)
+
 
 connectDB()
 .then(()=>{

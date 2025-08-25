@@ -7,6 +7,8 @@ const objectIdSchema = z
     message: "invalid objectId"
 });
 
+type objectIdSchemaType = z.infer<typeof objectIdSchema>
+
 export const zodNoticeSchema = z.object({
     name: z
     .string()
@@ -16,12 +18,15 @@ export const zodNoticeSchema = z.object({
     content: z
     .string(),
 
-    category: objectIdSchema,
+    category: z
+    .string()
+    .min(1)
+    .optional(),
 
-    createdBy: objectIdSchema,
+    likes: z
+    .optional(z.array(objectIdSchema))
 
-    likes: objectIdSchema.optional()
 })
 
-type noticeT = z.infer<typeof zodNoticeSchema>;
-export type noticeType = noticeT & {_id: Types.ObjectId};
+export type noticeT = z.infer<typeof zodNoticeSchema>;
+export type noticeType = noticeT & {_id: Types.ObjectId, createdBy: objectIdSchemaType};

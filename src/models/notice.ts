@@ -10,18 +10,17 @@ const noticeSchema = new mongoose.Schema({
     content: String,
     category: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Category',
-        required: true
+        ref: 'Category'
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    likes: {
+    likes: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    }
+    }]
 }, { timestamps: true });
 
 export const Notice = mongoose.model('Notice',noticeSchema);

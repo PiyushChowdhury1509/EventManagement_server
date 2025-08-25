@@ -23,8 +23,7 @@ export const zodUserSchema = z.object({
     role: z
     .enum(["admin","student"])
     .default("student")
-    .optional()
 })
 
-type userT = z.infer<typeof zodUserSchema>;
+export type userT = z.infer<typeof zodUserSchema>;
 export type userType = userT & {_id: Types.ObjectId, getJwt():string};
