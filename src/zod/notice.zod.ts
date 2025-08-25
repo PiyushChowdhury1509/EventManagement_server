@@ -7,9 +7,13 @@ const objectIdSchema = z
     message: "invalid objectId"
 });
 
+
+    const stringOrNumber = z.union([objectIdSchema.optional(), z.null()]);
+
 type objectIdSchemaType = z.infer<typeof objectIdSchema>
 
 export const zodNoticeSchema = z.object({
+
     name: z
     .string()
     .min(1)
@@ -24,9 +28,12 @@ export const zodNoticeSchema = z.object({
     .optional(),
 
     likes: z
-    .optional(z.array(objectIdSchema))
+    .optional(z.array(objectIdSchema)),
+
+    terminationDate: z
+    .coerce.date()
 
 })
 
 export type noticeT = z.infer<typeof zodNoticeSchema>;
-export type noticeType = noticeT & {_id: Types.ObjectId, createdBy: objectIdSchemaType};
+export type noticeType = noticeT & {_id: string, createdBy:z.infer<typeof  stringOrNumber>};
