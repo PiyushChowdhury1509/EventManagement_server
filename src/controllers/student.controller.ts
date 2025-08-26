@@ -205,16 +205,15 @@ export const handleLike = async (req: Request, res: Response) => {
 };
 
 
-export const handleComment = async (req: Request, res: Response) => {
+export const addComment = async (req: Request, res: Response) => {
   try{
 
-    const { isAddComment, targetType, targetId } = req.params;
+    const { targetType, targetId } = req.params;
     const { commentContent } = req.body;
     const { user } = (req as any) as { user: userType };
 
     let urlError:boolean=false;
-    if(isAddComment!=='0' && isAddComment!=='1') urlError=true;
-    else if(!isValidObjectId(targetId)) urlError=true;
+    if(!isValidObjectId(targetId)) urlError=true;
     else if(!(["notice","event","comment"].includes(targetType))) urlError=true;
 
     if(urlError){
@@ -224,26 +223,6 @@ export const handleComment = async (req: Request, res: Response) => {
       })
       return;
     }
-
-    if(isAddComment==='0'){
-      const deletedComment = await Comment.findByIdAndDelete(targetId);
-
-      if(!deletedComment){
-        res.status(404).json({
-          success: true,
-          message: "comment not found"
-        });
-        return;
-      } else{
-        res.status(200).json({
-          success: true,
-          message: "comment deleted successfully"
-        });
-        return;
-      }
-    }
-
-    console.log(targetId,targetType);
     let target:any=null;
     switch(targetType){
       case "notice":
@@ -319,6 +298,44 @@ export const handleComment = async (req: Request, res: Response) => {
       message: "internal server error",
       error: error
     })
+    return;
+  }
+}
+
+export const deleteComment = async (req: Request, res: Response) => {
+  try{
+
+    const { targetId } = req.params;
+
+    if(!targetId || !isValidObjectId(targetId)){
+      res.status(400).json({
+        success: false,
+        message: "invalid request"
+      });
+      return;
+    }
+
+    const deletedComment = await Comment.findByIdAndDelete(targetId);
+
+    if(!deletedComment){
+      res.status(404).json({
+        success: false,
+        message: "comment not found"
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "comment deleted successfully"
+    });
+    return;
+
+  } catch(error){
+    res.status(500).json({
+      success: false,
+      message: "internal server error"
+    });
     return;
   }
 }

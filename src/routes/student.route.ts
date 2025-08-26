@@ -1,11 +1,17 @@
 import { Router } from "express";
 import { studentAuth } from "../middlewares/userAuth";
-import { getNotices, handleComment, handleLike } from "../controllers/student.controller";
+import { getNotices, addComment, handleLike, deleteComment } from "../controllers/student.controller";
 
 const studentRouter = Router();
 
 studentRouter.get('/getNotices/:status',studentAuth, getNotices);
+
+
+//like apis
 studentRouter.post('/handleLike/:like/:targetType/:targetId',studentAuth,handleLike);
-studentRouter.post('/handleComment/:isAddComment/:targetType/:targetId',studentAuth,handleComment);
+
+//comment apis
+studentRouter.post('/comment/add/:targetType/:targetId',studentAuth,addComment);
+studentRouter.post('/comment/delete/:targetId',studentAuth, deleteComment);
 
 export default studentRouter;
