@@ -134,7 +134,7 @@ export const handleLike = async (req: Request, res: Response) => {
       return;
     }
 
-    if (like) {
+    if (like==='1') {
       const existingLike = await Like.findOne({
         userId: user._id,
         targetType,
