@@ -106,6 +106,14 @@ export const handleLike = async (req: Request, res: Response) => {
       return;
     }
 
+    if(like!=='1' && like!=='0'){
+      res.status(400).json({
+        success: false,
+        message: "invalid request"
+      })
+      return;
+    }
+
     const { user } = req as any as { user: userType };
     let trueTarget;
 
@@ -163,7 +171,7 @@ export const handleLike = async (req: Request, res: Response) => {
         message: "liked successfully",
       });
       return;
-    } else{
+    } else {
       const deletedLike = await Like.findOneAndDelete({
         userId: user._id,
         targetType,
@@ -187,14 +195,6 @@ export const handleLike = async (req: Request, res: Response) => {
     }
 
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({
-        success: false,
-        message: "invalid data",
-        error: error,
-      });
-      return;
-    }
     res.status(500).json({
       success: false,
       message: "internal server error",
@@ -203,3 +203,122 @@ export const handleLike = async (req: Request, res: Response) => {
     return;
   }
 };
+
+
+export const handleComment = async (req: Request, res: Response) => {
+  try{
+
+    const { isAddComment, targetType, targetId } = req.params;
+    const { commentContent } = req.body;
+    const { user } = (req as any) as { user: userType };
+
+    let urlError:boolean=false;
+    if(isAddComment!=='0' && isAddComment!=='1') urlError=true;
+    else if(!isValidObjectId(targetId)) urlError=true;
+    else if(!(["notice","event","comment"].includes(targetType))) urlError=true;
+
+    if(urlError){
+      res.status(400).json({
+        success: false,
+        message: "invalid request"
+      })
+      return;
+    }
+
+    if(isAddComment==='0'){
+      const deletedComment = await Comment.findByIdAndDelete(targetId);
+
+      if(!deletedComment){
+        res.status(404).json({
+          success: true,
+          message: "comment not found"
+        });
+        return;
+      } else{
+        res.status(200).json({
+          success: true,
+          message: "comment deleted successfully"
+        });
+        return;
+      }
+    }
+
+    console.log(targetId,targetType);
+    let target:any=null;
+    switch(targetType){
+      case "notice":
+        const notice = await Notice.findById(targetId);
+        target = notice;
+        break;
+      
+      case "event":
+        const event = await Event.findById(targetId);
+        target = event;
+        break;
+
+      case "comment":
+        const comment = await Comment.findById(targetId);
+        console.log(comment)
+        target = comment;
+        break;
+    }
+
+    if(!target){
+      res.status(404).json({
+        success: false,
+        message: "resource type not found"
+      })
+      return;
+    }
+
+    if(targetType === 'comment'){
+      if(target.depth === 2){
+        res.status(422).json({
+          success: false,
+          message: "max comment depth reached"
+        });
+        return;
+      }
+
+      const newComment = new Comment({
+        content: commentContent,
+        createdBy: user._id,
+        parentId: target._id,
+        targetType: target.targetType,
+        target: target.target,
+        depth: target.depth +1
+      });
+
+      await newComment.save();
+
+      res.status(201).json({
+        success: true,
+        message: "replied successfully"
+      });
+      return;
+    }
+
+    const newComment = new Comment({
+      content: commentContent,
+      createdBy: user._id,
+      targetType,
+      target: target._id,
+    });
+
+    await newComment.save();
+
+    res.status(201).json({
+      success: true,
+      message: "comment added successfully"
+    });
+    return;
+
+  } catch(error){
+    res.status(500).json({
+      success: false,
+      message: "internal server error",
+      error: error
+    })
+    return;
+  }
+}

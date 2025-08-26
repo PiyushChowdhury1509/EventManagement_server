@@ -18,12 +18,16 @@ const commentSchema = new mongoose.Schema({
     },
     targetType: {
         type: String,
-        enum: ["Event","Notice"],
+        enum: ["event", "notice"],
         required: true
     },
     target: {
         type: mongoose.Schema.Types.ObjectId,
         required: true
+    },
+    depth: {
+        type: Number,
+        default: 0
     },
     likeCount: {
         type: Number,
