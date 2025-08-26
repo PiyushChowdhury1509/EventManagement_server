@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import z from "zod";
 import { noticeType } from "../zod/notice.zod";
 import { Notice } from "../models/notice";
-import { isValidObjectId, trusted } from "mongoose";
+import mongoose, { isValidObjectId, trusted } from "mongoose";
 import { userType } from "../zod/user.zod";
 import { Event } from "../models/event";
 import { Comment } from "../models/comment";
@@ -224,35 +224,15 @@ export const addComment = async (req: Request, res: Response) => {
       })
       return;
     }
-    let target:any=null;
-    switch(targetType){
-      case "notice":
-        const notice = await Notice.findById(targetId);
-        target = notice;
-        break;
-      
-      case "event":
-        const event = await Event.findById(targetId);
-        target = event;
-        break;
-
-      case "comment":
-        const comment = await Comment.findById(targetId);
-        console.log(comment)
-        target = comment;
-        break;
-    }
-
-    if(!target){
-      res.status(404).json({
-        success: false,
-        message: "resource type not found"
-      })
-      return;
-    }
 
     if(targetType === 'comment'){
-      if(target.depth === 2){
+      const targetComment = await Comment.findById(targetId);
+
+      if(!targetComment){
+        throw new Error("comment not found");
+      }
+
+      if(targetComment.depth === 2){
         res.status(422).json({
           success: false,
           message: "max comment depth reached"
@@ -263,10 +243,10 @@ export const addComment = async (req: Request, res: Response) => {
       const newComment = new Comment({
         content: commentContent,
         createdBy: user._id,
-        parentId: target._id,
-        targetType: target.targetType,
-        target: target.target,
-        depth: target.depth +1
+        parentId: targetComment._id,
+        targetType: targetComment.targetType,
+        target: targetComment.target,
+        depth: targetComment.depth +1
       });
 
       await newComment.save();
@@ -278,18 +258,26 @@ export const addComment = async (req: Request, res: Response) => {
       return;
     }
 
-    const newComment = new Comment({
-      content: commentContent,
-      createdBy: user._id,
-      targetType,
-      target: target._id,
-    });
+    const Post = targetType === 'event' ? Event : Notice;
 
-    await newComment.save();
+    const [ createdComment, updatedPost ] = await Promise.all([
+      Comment.create({
+        content: commentContent,
+        createdBy: user._id,
+        targetType,
+        target: targetId
+      }),
+
+      Post.updateMany(
+        {_id: targetId},
+        { $inc: { commentCount: 1}}
+      )
+    ]);
 
     res.status(201).json({
       success: true,
-      message: "comment added successfully"
+      message: "comment added successfully",
+      data: [createdComment,updatedPost]
     });
     return;
 
@@ -326,9 +314,21 @@ export const deleteComment = async (req: Request, res: Response) => {
       return;
     }
 
+    let updatedPost: any=null;
+    if(deletedComment.targetType==='event'){
+      updatedPost = await Event.findByIdAndUpdate({_id: deletedComment.target},{$inc: {commentCount: -1}})
+    } else{
+      updatedPost = await Notice.findByIdAndUpdate({_id: deletedComment.target},{$inc: {commentCount: -1}})
+    }
+
+    if(!updatedPost){
+      throw new Error("post wasnt found");
+    }
+
     res.status(200).json({
       success: true,
-      message: "comment deleted successfully"
+      message: "comment deleted successfully",
+      data: [deletedComment]
     });
     return;
 
@@ -340,3 +340,6 @@ export const deleteComment = async (req: Request, res: Response) => {
     return;
   }
 }
+
+
+

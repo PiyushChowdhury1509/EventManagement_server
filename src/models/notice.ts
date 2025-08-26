@@ -1,4 +1,4 @@
-import mongoose, { Document, Types } from "mongoose";
+import mongoose from "mongoose";
 
 export interface INotice {
   _id: string;
@@ -28,6 +28,10 @@ const noticeSchema = new mongoose.Schema(
       required: true,
     },
     likeCount: {
+      type: Number,
+      default: 0
+    },
+    commentCount: {
       type: Number,
       default: 0
     },

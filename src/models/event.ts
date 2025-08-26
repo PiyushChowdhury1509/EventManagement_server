@@ -28,6 +28,10 @@ const eventSchema = new mongoose.Schema({
             ref: 'User'
         }
     ],
+    commentCount: {
+        type: Number,
+        default: 0
+    },
     likeCount: {
         type: Number,
         default: 0
