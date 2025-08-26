@@ -216,6 +216,7 @@ export const addComment = async (req: Request, res: Response) => {
     if(!isValidObjectId(targetId)) urlError=true;
     else if(!(["notice","event","comment"].includes(targetType))) urlError=true;
 
+
     if(urlError){
       res.status(400).json({
         success: false,
