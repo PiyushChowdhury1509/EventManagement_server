@@ -15,7 +15,7 @@ const eventSchema = new mongoose.Schema({
     category: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category',
-        required: true
+        required: true,
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -26,6 +26,12 @@ const eventSchema = new mongoose.Schema({
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
+        }
+    ],
+    files: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'File'
         }
     ],
     commentCount: {

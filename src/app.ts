@@ -9,17 +9,19 @@ const app:Express = express();
 
 app.use(cors());
 app.use(compression());
-app.use(express.json());
 app.use(cookieParser());
+app.use(express.json({ limit: '10mb'}));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
 
 import authRouter from './routes/auth.route';
-app.use('/api/v1/user',authRouter);
+app.use('/api/v1/user', authRouter);
 
 import adminRouter from './routes/admin.route';
-app.use('/api/v1/admin',adminRouter);
+app.use('/api/v1/admin', adminRouter);
 
 import studentRouter from './routes/student.route';
-app.use('/api/v1/student',studentRouter);
+app.use('/api/v1/student', studentRouter);
 
 
 connectDB()

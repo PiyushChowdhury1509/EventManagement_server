@@ -2,7 +2,6 @@ import jwt from 'jsonwebtoken'
 import { Request,Response,NextFunction } from 'express'
 import { userType } from '../zod/user.zod'
 import { User } from '../models/user';
-import { success } from 'zod/v4/index.cjs';
 
 const jwtChecker = async (token: string): Promise<userType | null> => {
 
@@ -58,6 +57,7 @@ export const studentAuth = async (req: Request, res: Response, next: NextFunctio
 
 export const adminAuth = async (req: Request, res: Response, next: NextFunction) => {
     try{
+        console.log("admin")
         const { token } = req.cookies;
         if(!token){
             res.status(400).json({
@@ -85,8 +85,10 @@ export const adminAuth = async (req: Request, res: Response, next: NextFunction)
         }
 
         (req as any).user=user;
+        console.log(user)
         next();
     } catch(err){
+        console.log(err)
         res.status(500).json({
             success: false,
             message: "internal server error"
@@ -94,3 +96,4 @@ export const adminAuth = async (req: Request, res: Response, next: NextFunction)
         return;
     }
 }
+

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import z from "zod";
 import { noticeType } from "../zod/notice.zod";
 import { Notice } from "../models/notice";
-import mongoose, { isValidObjectId, trusted } from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { userType } from "../zod/user.zod";
 import { Event } from "../models/event";
 import { Comment } from "../models/comment";
@@ -61,6 +61,7 @@ export const getNotices = async (req: Request, res: Response) => {
       data: noticeData,
     });
     return;
+
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({
