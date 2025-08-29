@@ -2,11 +2,12 @@ import { Request, Response } from "express";
 import z from "zod";
 import { noticeType } from "../zod/notice.zod";
 import { Notice } from "../models/notice";
-import mongoose, { isValidObjectId } from "mongoose";
+import { isValidObjectId } from "mongoose";
 import { userType } from "../zod/user.zod";
 import { Event } from "../models/event";
 import { Comment } from "../models/comment";
 import { Like } from "../models/like";
+import { Registration } from "../models/registration";
 
 export const getNotices = async (req: Request, res: Response) => {
   try {
@@ -344,3 +345,70 @@ export const deleteComment = async (req: Request, res: Response) => {
 
 
 
+export const getEvents = async (req: Request, res: Response) => {
+  try{
+     
+    const { user } = (req as any) as { user: userType};
+    const { type = "all", status = "all" } = req.params;
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    
+    if(!page || !limit){
+      res.status(400).json({
+        success: false,
+        message: "invalid request"
+      });
+      return;
+    }
+
+    const registrations = await Registration.find({
+      student: user._id
+    }).skip((page-1)*(limit)).limit(limit).lean();
+
+    const registeredEventIds = registrations.map(r => r.event.toString());
+
+    let filter = {};
+
+    if(type === "registered"){
+      //@ts-ignore
+      filter._id = { $in: registeredEventIds };
+    } else if(type === "unregistered"){
+      //@ts-ignore
+      filter._id = { $nin: registeredEventIds };
+    }
+
+    const now = new Date();
+    if(status === "past"){
+      //@ts-ignore
+      filter.eventDate = { $lt: now };
+    } else if(status === "upcoming"){
+      //@ts-ignore
+      filter.eventDate = { $gte: now };
+    }
+
+    let events:any = await Event.find(filter).lean();
+
+    if(type === "all"){
+      events = events.map((e:any) => ({
+        ...e,
+        registered: registeredEventIds.includes(e._id.toString())
+      }))
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "events fetched successfully",
+      data: events
+    });
+    return;
+
+  } catch(error){
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "internal server error"
+    });
+    return;
+  }
+}

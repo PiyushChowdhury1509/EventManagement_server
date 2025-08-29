@@ -126,6 +126,7 @@ export const createEvent = async (req: Request, res: Response, next: NextFunctio
                     fileDocs.push(savedFile._id);
                 } catch (fileError) {
                     console.error("Error processing file:", fileError);
+                    console.log(file.path);
                     if (fs.existsSync(file.path)) {
                         fs.unlinkSync(file.path);
                     }

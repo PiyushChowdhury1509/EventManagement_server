@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { date } from "zod";
 
 const eventSchema = new mongoose.Schema({
     name: {
@@ -43,6 +44,8 @@ const eventSchema = new mongoose.Schema({
         default: 0
     }
 }, { timestamps: true });
+
+eventSchema.index({ date: 1 });
 
 
 export const Event = mongoose.model('Event',eventSchema);

@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { studentAuth } from "../middlewares/userAuth";
-import { getNotices, addComment, handleLike, deleteComment } from "../controllers/student.controller";
+import { getNotices, addComment, handleLike, deleteComment, getEvents } from "../controllers/student.controller";
 
 const studentRouter = Router();
 
 studentRouter.get('/getNotices/:status',studentAuth, getNotices);
+studentRouter.get('/getEvents/:type/:status',studentAuth,getEvents);
 
 
 //like apis
