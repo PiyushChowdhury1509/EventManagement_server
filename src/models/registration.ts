@@ -18,7 +18,14 @@ const registrationSchema = new mongoose.Schema({
     registeredAt: {
         type: Date,
         default: Date.now
-    }
+    },
+
+    responses: [
+        {
+            fieldLabel: String,
+            answer: mongoose.Schema.Types.Mixed
+        }
+    ]
 }, { timestamps: true } );
 
 registrationSchema.index({ student: 1, event: 1 }, { unique: true });

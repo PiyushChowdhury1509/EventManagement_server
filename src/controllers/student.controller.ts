@@ -345,7 +345,7 @@ export const deleteComment = async (req: Request, res: Response) => {
 
 
 
-export const getEvents = async (req: Request, res: Response) => {
+export const fetchEvents = async (req: Request, res: Response) => {
   try{
      
     const { user } = (req as any) as { user: userType};
@@ -408,6 +408,48 @@ export const getEvents = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "internal server error"
+    });
+    return;
+  }
+}
+
+export const getEvents = async (req: Request, res: Response) => {
+  try{
+
+    const { user } = (req as any) as { user: userType };
+    const { type="unregistered", status="upcoming", page=1, limit=10 } = req.query;
+
+    if(!type || !status || !page || !limit || (limit<'1' || page<'1')){
+      res.status(400).json({
+        success: true,
+        message: "invalid query params"
+      });
+      return;
+    }
+
+    const registrations = await Registration.find({
+      student: user._id
+    }).lean();
+
+    const registrationIds = registrations.map(r => r._id.toString());
+
+    const filter: any = {};
+
+    if(type === 'registered'){
+      filter._id = { $in: registrationIds }
+    } 
+    else if(type === 'unregistered'){
+      filter._id = { $nin: registrationIds }
+    };
+
+    
+
+  } catch(error){
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "internal server error",
+      error: error
     });
     return;
   }

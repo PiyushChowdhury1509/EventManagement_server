@@ -42,6 +42,10 @@ const eventSchema = new mongoose.Schema({
     likeCount: {
         type: Number,
         default: 0
+    },
+    form: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Form'
     }
 }, { timestamps: true });
 
