@@ -20,6 +20,11 @@ const registrationSchema = new mongoose.Schema({
         default: Date.now
     },
 
+    form: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Form'
+    },
+
     responses: [
         {
             fieldLabel: String,

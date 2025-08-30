@@ -1,18 +1,25 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const formFieldSchema = new mongoose.Schema({
-  label: { type: String, required: true },     
-  type: { type: String, required: true },      
-  options: [String],                           
-  required: { type: Boolean, default: false },
-});
+const formSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    fields: [
+      {
+        label: { 
+          type: String, 
+          required: true 
+        },
+        type: { 
+          type: String, 
+          required: true }, 
+        options: [String],
+        required: { type: Boolean, default: false },
+      },
+    ],
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin", 
+      required: true,
+    },
+  },{ timestamps: true });
 
-const formSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true },     
-    fields: [formFieldSchema],                  
-  },
-  { timestamps: true }
-);
-
-export default mongoose.model("Form", formSchema);
+  export const Form = mongoose.model('Form', formSchema);
