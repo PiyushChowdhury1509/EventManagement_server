@@ -11,6 +11,8 @@ import { Form, IForm } from "../models/form";
 import { IUser, User } from "../models/user";
 import { EventRegistrationStatus, EventStatus } from "../Types/event.types";
 import { LikeType, NoticeStatusType, ResourceType } from "../Types/resource.types";
+import { uploadOnCloudinary } from "../utils/cloudinary";
+import fs from 'fs';
 
 export const getNotices = async (req: Request, res: Response) => {
   try {
@@ -618,7 +620,7 @@ export const getParticularResource = async (req: Request, res: Response) => {
     }
 
     let Resource: any = null;
-    if(resource===ResourceType.EVENT) Resource = Event;
+    if(resource === ResourceType.EVENT) Resource = Event;
     else Resource = Notice;
 
     let query = Resource.findById(resourceId)
@@ -643,6 +645,66 @@ export const getParticularResource = async (req: Request, res: Response) => {
       success: true,
       message: `${resource} fetched successfully`,
       data: data
+    });
+    return;
+
+
+  } catch(error){
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "internal server error",
+      error: error
+    });
+    return;
+  }
+}
+
+
+
+export const editProfile = async (req: Request, res: Response) => {
+  try{
+    const { user } = (req as any) as { user: userType};
+    const { name } = req.body;
+
+
+    const updates: Partial<IUser> ={}
+    if (name) updates.name = name
+
+    if (req.file) {
+      try {
+        const imageUrl = await uploadOnCloudinary(req.file.path);
+        updates.profilePhotoUrl = imageUrl;
+        fs.unlinkSync(req.file.path);
+
+      } catch (error) {
+        console.error("Cloudinary upload failed:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Photo upload failed",
+        });
+      }
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+
+    if(!updatedUser){
+      res.status(404).json({
+        success: false,
+        message: "user not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "user updated successfully",
+      data: updatedUser
     });
     return;
 
