@@ -1,4 +1,4 @@
-import mongoose, { Types, Document } from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 interface FormField {
   label: string;
@@ -6,14 +6,15 @@ interface FormField {
   options?: string[];
   required?: boolean;
 }
+interface Document {
+  _id:Types.ObjectId
+}
 
-export interface IForm extends Document {
+export interface IForm extends Document  {
   name: string;
   fields: FormField[];
   createdBy: Types.ObjectId; 
-  createdOn?: Date;
-  createdAt?: Date; 
-  updatedAt?: Date; 
+  createdOn?: Date; 
 }
 
 const formSchema = new mongoose.Schema<IForm>({

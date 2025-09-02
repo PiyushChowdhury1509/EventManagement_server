@@ -10,6 +10,7 @@ import { Event, IEvent } from "../models/event";
 import { userType } from "../zod/user.zod";
 import { Form, IForm } from "../models/form";
 import { createEventSchema } from "../zod/createEvent.zod";
+import { Types } from "mongoose";
 
 const createCategory = async (category: string):Promise<string | undefined> => {
     try{
@@ -106,9 +107,10 @@ export const cloneForm = async (req: Request, res: Response) => {
             });
             return;
         } else{
-            const myData: IForm[] = await Form.find({_id: user._id}).skip(skip).limit(Number(limit));
+
+            const myData = await Form.find({createdBy: user._id}).skip(skip).limit(Number(limit));
             const formIds = myData.map((forms)=>forms._id.toString());
-            
+
             const formData = await Form.find({
                 _id: { $nin: formIds}
             }).skip(skip).limit(Number(limit)).lean();

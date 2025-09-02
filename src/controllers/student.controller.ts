@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import z from "zod";
-import { noticeType } from "../zod/notice.zod";
 import { INotice, Notice } from "../models/notice";
 import { isValidObjectId } from "mongoose";
 import { userType } from "../zod/user.zod";
@@ -10,6 +9,8 @@ import { Like } from "../models/like";
 import { IRegistration, Registration } from "../models/registration";
 import { Form, IForm } from "../models/form";
 import { IUser, User } from "../models/user";
+import { EventRegistrationStatus, EventStatus } from "../Types/event.types";
+import { LikeType, NoticeStatusType, ResourceType } from "../Types/resource.types";
 
 export const getNotices = async (req: Request, res: Response) => {
   try {
@@ -24,19 +25,19 @@ export const getNotices = async (req: Request, res: Response) => {
     let noticeData: Array<INotice> = [];
 
     switch (status) {
-      case "expired":
+      case NoticeStatusType.EXPIRED:
         noticeData = await Notice.find({
           date: { $lt: Date.now() },
         });
         break;
 
-      case "upcoming":
+      case NoticeStatusType.UPCOMING:
         noticeData = await Notice.find({
           date: { $gte: Date.now() },
         }).sort({ date: 1 });
         break;
 
-      case "urgent":
+      case NoticeStatusType.URGENT:
         noticeData = await Notice.find({
           date: { $gte: Date.now(), $lt: Date.now() + 24 * 60 * 60 },
         }).sort({ date: 1 });
@@ -110,7 +111,7 @@ export const handleLike = async (req: Request, res: Response) => {
       return;
     }
 
-    if(like!=='1' && like!=='0'){
+    if(like!==LikeType.LIKE && like!==LikeType.UNLIKE){
       res.status(400).json({
         success: false,
         message: "invalid request"
@@ -122,17 +123,17 @@ export const handleLike = async (req: Request, res: Response) => {
     let trueTarget;
 
     switch (targetType) {
-      case "notice":
+      case ResourceType.NOTICE:
         const notice = await Notice.findById(targetId);
         trueTarget = notice;
         break;
 
-      case "event":
+      case ResourceType.EVENT:
         const event = await Event.findById(targetId);
         trueTarget = event;
         break;
 
-      case "comment":
+      case ResourceType.COMMENT:
         const comment = await Comment.findById(targetId);
         trueTarget = comment;
         break;
@@ -146,7 +147,7 @@ export const handleLike = async (req: Request, res: Response) => {
       return;
     }
 
-    if (like==='1') {
+    if (like === LikeType.LIKE) {
       const existingLike = await Like.findOne({
         userId: user._id,
         targetType,
@@ -229,7 +230,7 @@ export const addComment = async (req: Request, res: Response) => {
       return;
     }
 
-    if(targetType === 'comment'){
+    if(targetType === ResourceType.COMMENT){
       const targetComment = await Comment.findById(targetId);
 
       if(!targetComment){
@@ -262,7 +263,7 @@ export const addComment = async (req: Request, res: Response) => {
       return;
     }
 
-    const Post = targetType === 'event' ? Event : Notice;
+    const Post = targetType === ResourceType.EVENT ? Event : Notice;
 
     const [ createdComment, updatedPost ] = await Promise.all([
       Comment.create({
@@ -319,9 +320,9 @@ export const deleteComment = async (req: Request, res: Response) => {
     }
 
     let updatedPost: any=null;
-    if(deletedComment.targetType==='event'){
+    if(deletedComment.targetType === ResourceType.EVENT){
       updatedPost = await Event.findByIdAndUpdate({_id: deletedComment.target},{$inc: {commentCount: -1}})
-    } else{
+    } else if(deletedComment.targetType === ResourceType.NOTICE) {
       updatedPost = await Notice.findByIdAndUpdate({_id: deletedComment.target},{$inc: {commentCount: -1}})
     }
 
@@ -350,7 +351,7 @@ export const fetchEvents = async (req: Request, res: Response) => {
   try{
 
     const { user } = (req as any) as { user: userType };
-    const { type="unregistered", status="upcoming", pageNum='1', limitNum='10' } = req.query;
+    const { type = EventRegistrationStatus.NOTREGISTERED, status = EventStatus.UPCOMING, pageNum='1', limitNum='10' } = req.query;
 
     const page = Number(pageNum);
     const limit = Number(limitNum);
@@ -370,18 +371,17 @@ export const fetchEvents = async (req: Request, res: Response) => {
     const registrationIds = registrations.map(r => r.event.toString());
 
     const filter: any = {};
-
-    if(type === 'registered'){
+    if(type === EventRegistrationStatus.REGISTERED){
       filter._id = { $in: registrationIds }
     } 
-    else if(type === 'unregistered'){
+    else if(type === EventRegistrationStatus.NOTREGISTERED){
       filter._id = { $nin: registrationIds }
     };
 
-    if(status==='upcoming'){
+    if(status === EventStatus.UPCOMING){
       filter.date = { $gte: new Date() }
     }
-    else if(status==='finished'){
+    else if(status === EventStatus.FINISHED){
       filter.date = { $lt: new Date() }
     };
 
@@ -548,7 +548,7 @@ export const fetchAdminResources = async (req: Request, res: Response) => {
     const page = Number(pageNum);
     const limit = Number(limitNum);
 
-    if(!pageNum || !limitNum || (isNaN(page) || isNaN(limit)) || (page<1 || limit<1) || (resource!='notices' && resource!='events') || (status!='past' && status!='future')){
+    if(!pageNum || !limitNum || (isNaN(page) || isNaN(limit)) || (page<1 || limit<1) || (resource!=ResourceType.NOTICE && resource!=ResourceType.EVENT) || (status!=EventStatus.FINISHED && status!=EventStatus.UPCOMING)){
       res.status(400).json({
         success: false,
         message: "invalid request"
@@ -567,11 +567,11 @@ export const fetchAdminResources = async (req: Request, res: Response) => {
     }
 
     let Resource: any = null;
-    if(resource==='events') Resource = Event;
+    if(resource === ResourceType.EVENT) Resource = Event;
     else Resource = Notice;
 
     let data: any = null;
-    if(status==='past'){
+    if(status === EventStatus.FINISHED){
       data = await Resource.find({
         createdBy: admin._id,
         date: { $lt: new Date() }
@@ -609,7 +609,7 @@ export const getParticularResource = async (req: Request, res: Response) => {
     const { resource } = req.query;
     const { resourceId } = req.params;
 
-    if(resource!=='notice' && resource!=='event'){
+    if(resource !== ResourceType.NOTICE && resource !== ResourceType.EVENT){
       res.status(400).json({
         success: false,
         message: "invalid request"
@@ -618,10 +618,18 @@ export const getParticularResource = async (req: Request, res: Response) => {
     }
 
     let Resource: any = null;
-    if(resource==='event') Resource = Event;
+    if(resource===ResourceType.EVENT) Resource = Event;
     else Resource = Notice;
 
-    let data: IEvent | INotice | null = await Resource.findById(resourceId);
+    let query = Resource.findById(resourceId)
+    .populate("category","name")
+    .populate("createdBy","name")
+
+    if(resource === ResourceType.EVENT){
+      query.populate("files","url type name size");
+    }
+
+    const data: IEvent | INotice | null = await query;
 
     if(!data){
       res.status(404).json({
