@@ -6,9 +6,9 @@ import { Category } from "../models/category";
 import { uploadOnCloudinary } from "../utils/cloudinary";
 import fs from "fs"
 import { File, IFile } from "../models/file";
-import { Event } from "../models/event";
+import { Event, IEvent } from "../models/event";
 import { userType } from "../zod/user.zod";
-import { Form } from "../models/form";
+import { Form, IForm } from "../models/form";
 import { createEventSchema } from "../zod/createEvent.zod";
 
 const createCategory = async (category: string):Promise<string | undefined> => {
@@ -106,7 +106,7 @@ export const cloneForm = async (req: Request, res: Response) => {
             });
             return;
         } else{
-            const myData = await Form.find({_id: user._id}).skip(skip).limit(Number(limit));
+            const myData: IForm[] = await Form.find({_id: user._id}).skip(skip).limit(Number(limit));
             const formIds = myData.map((forms)=>forms._id.toString());
             
             const formData = await Form.find({
@@ -186,7 +186,7 @@ export const createEvent = async (req: Request, res: Response) => {
         const updatedCategory = await createCategory(category);
         console.log("updated category",updatedCategory);
 
-        const createdEvent = await Event.create({
+        const createdEvent: IEvent = await Event.create({
             name: parsedData.name,
             description: parsedData.description,
             date: parsedData.date,

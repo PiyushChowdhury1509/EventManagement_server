@@ -31,7 +31,7 @@ export const zodNoticeSchema = z.object({
     .number()
     .optional(),
 
-    terminationDate: z
+    date: z
     .coerce.date()
 
 })

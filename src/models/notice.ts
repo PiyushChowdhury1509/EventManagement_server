@@ -35,7 +35,7 @@ const noticeSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
-    terminationDate: {
+    date: {
       type: Date,
     },
   },

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import z from "zod";
 import { noticeType } from "../zod/notice.zod";
-import { Notice } from "../models/notice";
+import { INotice, Notice } from "../models/notice";
 import { isValidObjectId } from "mongoose";
 import { userType } from "../zod/user.zod";
 import { Event, IEvent } from "../models/event";
@@ -9,6 +9,7 @@ import { Comment } from "../models/comment";
 import { Like } from "../models/like";
 import { IRegistration, Registration } from "../models/registration";
 import { Form, IForm } from "../models/form";
+import { IUser, User } from "../models/user";
 
 export const getNotices = async (req: Request, res: Response) => {
   try {
@@ -20,25 +21,25 @@ export const getNotices = async (req: Request, res: Response) => {
       });
       return;
     }
-    let noticeData: Array<noticeType> = [];
+    let noticeData: Array<INotice> = [];
 
     switch (status) {
       case "expired":
         noticeData = await Notice.find({
-          terminationDate: { $lt: Date.now() },
+          date: { $lt: Date.now() },
         });
         break;
 
       case "upcoming":
         noticeData = await Notice.find({
-          terminationDate: { $gte: Date.now() },
-        }).sort({ terminationDate: 1 });
+          date: { $gte: Date.now() },
+        }).sort({ date: 1 });
         break;
 
       case "urgent":
         noticeData = await Notice.find({
-          terminationDate: { $gte: Date.now(), $lt: Date.now() + 24 * 60 * 60 },
-        }).sort({ terminationDate: 1 });
+          date: { $gte: Date.now(), $lt: Date.now() + 24 * 60 * 60 },
+        }).sort({ date: 1 });
         break;
 
       default:
@@ -493,6 +494,150 @@ export const registerEvent = async (req: Request, res: Response) => {
       data: {registration, updatedEvent}
     });
     return;
+
+  } catch(error){
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "internal server error",
+      error: error
+    });
+    return;
+  }
+}
+
+
+export const fetchProfile = async (req: Request, res: Response) => {
+  try{
+
+    const { profileId } = req.params;
+    const user: IUser | null = await User.findById(profileId).lean();
+
+    if(!user){
+      res.status(404).json({
+        success: false,
+        message: "user not found"
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "user fetched successfully",
+      data: user
+    });
+    return;
+
+  } catch(error){
+    res.status(500).json({
+      success: false,
+      message: "internal server error"
+    });
+    return;
+  }
+}
+
+
+
+export const fetchAdminResources = async (req: Request, res: Response) => {
+  try{
+
+    const { adminId } = req.params;
+    const { pageNum, limitNum, status, resource } = req.query;
+    
+    const page = Number(pageNum);
+    const limit = Number(limitNum);
+
+    if(!pageNum || !limitNum || (isNaN(page) || isNaN(limit)) || (page<1 || limit<1) || (resource!='notices' && resource!='events') || (status!='past' && status!='future')){
+      res.status(400).json({
+        success: false,
+        message: "invalid request"
+      });
+      return;
+    }
+
+    const admin: IUser | null = await User.findById(adminId);
+
+    if(!admin){
+      res.status(404).json({
+        success: false,
+        message: "admin not found",
+      });
+      return;
+    }
+
+    let Resource: any = null;
+    if(resource==='events') Resource = Event;
+    else Resource = Notice;
+
+    let data: any = null;
+    if(status==='past'){
+      data = await Resource.find({
+        createdBy: admin._id,
+        date: { $lt: new Date() }
+      }).sort({ date: -1 }).lean();
+    }
+    else{
+      data = await Resource.find({
+        createdBy: admin._id,
+        date: { $gte: new Date() }
+      }).sort({ date: 1 }).lean();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "data fetched successfully",
+      data: data
+    });
+    return;
+
+  } catch(error){
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "internal server error",
+      error: error
+    });
+    return;
+  }
+}
+
+
+export const getParticularResource = async (req: Request, res: Response) => {
+  try{
+
+    const { resource } = req.query;
+    const { resourceId } = req.params;
+
+    if(resource!=='notice' && resource!=='event'){
+      res.status(400).json({
+        success: false,
+        message: "invalid request"
+      });
+      return;
+    }
+
+    let Resource: any = null;
+    if(resource==='event') Resource = Event;
+    else Resource = Notice;
+
+    let data: IEvent | INotice | null = await Resource.findById(resourceId);
+
+    if(!data){
+      res.status(404).json({
+        success: false,
+        message: `${resource} not found`
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `${resource} fetched successfully`,
+      data: data
+    });
+    return;
+
 
   } catch(error){
     console.log(error);
