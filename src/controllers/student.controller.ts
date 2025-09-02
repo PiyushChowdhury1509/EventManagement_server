@@ -4,10 +4,11 @@ import { noticeType } from "../zod/notice.zod";
 import { Notice } from "../models/notice";
 import { isValidObjectId } from "mongoose";
 import { userType } from "../zod/user.zod";
-import { Event } from "../models/event";
+import { Event, IEvent } from "../models/event";
 import { Comment } from "../models/comment";
 import { Like } from "../models/like";
-import { Registration } from "../models/registration";
+import { IRegistration, Registration } from "../models/registration";
+import { Form, IForm } from "../models/form";
 
 export const getNotices = async (req: Request, res: Response) => {
   try {
@@ -216,7 +217,7 @@ export const addComment = async (req: Request, res: Response) => {
 
     let urlError:boolean=false;
     if(!isValidObjectId(targetId)) urlError=true;
-    else if(!(["notice","event","comment"].includes(targetType))) urlError=true;
+    if(!(["notice","event","comment"].includes(targetType))) urlError=true;
 
 
     if(urlError){
@@ -344,82 +345,16 @@ export const deleteComment = async (req: Request, res: Response) => {
 }
 
 
-
 export const fetchEvents = async (req: Request, res: Response) => {
-  try{
-     
-    const { user } = (req as any) as { user: userType};
-    const { type = "all", status = "all" } = req.params;
-
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
-    
-    if(!page || !limit){
-      res.status(400).json({
-        success: false,
-        message: "invalid request"
-      });
-      return;
-    }
-
-    const registrations = await Registration.find({
-      student: user._id
-    }).skip((page-1)*(limit)).limit(limit).lean();
-
-    const registeredEventIds = registrations.map(r => r.event.toString());
-
-    let filter = {};
-
-    if(type === "registered"){
-      //@ts-ignore
-      filter._id = { $in: registeredEventIds };
-    } else if(type === "unregistered"){
-      //@ts-ignore
-      filter._id = { $nin: registeredEventIds };
-    }
-
-    const now = new Date();
-    if(status === "past"){
-      //@ts-ignore
-      filter.eventDate = { $lt: now };
-    } else if(status === "upcoming"){
-      //@ts-ignore
-      filter.eventDate = { $gte: now };
-    }
-
-    let events:any = await Event.find(filter).lean();
-
-    if(type === "all"){
-      events = events.map((e:any) => ({
-        ...e,
-        registered: registeredEventIds.includes(e._id.toString())
-      }))
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "events fetched successfully",
-      data: events
-    });
-    return;
-
-  } catch(error){
-    console.log(error);
-    res.status(500).json({
-      success: false,
-      message: "internal server error"
-    });
-    return;
-  }
-}
-
-export const getEvents = async (req: Request, res: Response) => {
   try{
 
     const { user } = (req as any) as { user: userType };
-    const { type="unregistered", status="upcoming", page=1, limit=10 } = req.query;
+    const { type="unregistered", status="upcoming", pageNum='1', limitNum='10' } = req.query;
 
-    if(!type || !status || !page || !limit || (limit<'1' || page<'1')){
+    const page = Number(pageNum);
+    const limit = Number(limitNum);
+
+    if(!type || !status || !page || !limit || (limit<1 || page<1)){
       res.status(400).json({
         success: true,
         message: "invalid query params"
@@ -431,7 +366,7 @@ export const getEvents = async (req: Request, res: Response) => {
       student: user._id
     }).lean();
 
-    const registrationIds = registrations.map(r => r._id.toString());
+    const registrationIds = registrations.map(r => r.event.toString());
 
     const filter: any = {};
 
@@ -442,7 +377,122 @@ export const getEvents = async (req: Request, res: Response) => {
       filter._id = { $nin: registrationIds }
     };
 
+    if(status==='upcoming'){
+      filter.date = { $gte: new Date() }
+    }
+    else if(status==='finished'){
+      filter.date = { $lt: new Date() }
+    };
+
+    const skip = (Number(page)-1)*(Number(limit));
+    const events = await Event.find(filter).skip(skip).limit(Number(limit))
+    .populate("category","name")
+    .populate("createdBy", "name")
+    .populate("files","name size url")
+    .lean();
+
+    res.status(200).json({
+      success: true,
+      message: "events fetched successfully",
+      data: events
+    });
+    return;
     
+
+  } catch(error){
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "internal server error",
+      error: error
+    });
+    return;
+  }
+}
+
+
+
+export const registerEvent = async (req: Request, res: Response) => {
+  try{
+
+    const { user } = (req as any);
+    const { eventId, responses } = req.body;
+
+    if(!eventId){
+      res.status(400).json({
+        success: false,
+        message: "invalid request",
+      });
+      return;
+    }
+
+    const event: IEvent | null = await Event.findById(eventId);
+    if(!event){
+      res.status(404).json({
+        success: false,
+        message: "event not found"
+      });
+      return;
+    }
+
+    const alreadyRegistered: IRegistration | null = await Registration.findOne({
+      student: user._id,
+      event: event._id
+    });
+
+    if(alreadyRegistered){
+      res.status(400).json({
+        success: false,
+        message: "you have already registered for this event",
+        data: alreadyRegistered
+      });
+      return;
+    }
+
+    let formId: any = null;
+    if(event.form){
+      const form: IForm | null = await Form.findById(event.form);
+      if(!form){
+        res.status(404).json({
+          success: false,
+          message: "form not found"
+        });
+        return;
+      }
+
+      formId = form._id;
+
+      for (const field of form.fields) {
+        const answered = responses?.find(
+          (r: any) => r.fieldLabel === field.label
+        );
+        if (field.required && !answered) {
+          return res.status(400).json({
+            success: false,
+            message: `Missing response for required field: ${field.label}`,
+          });
+        }
+      }
+    }
+
+    event.participants?.push(user._id);
+    const [ registration, updatedEvent ]: [IRegistration,IEvent] = await Promise.all([
+      Registration.create({
+        student: user._id,
+        event: event._id,
+        form: formId || null,
+        responses: responses || []
+      }),
+
+      event.save()
+    ]);
+
+    res.status(201).json({
+      success: true,
+      message: "registration successfull",
+      data: {registration, updatedEvent}
+    });
+    return;
 
   } catch(error){
     console.log(error);

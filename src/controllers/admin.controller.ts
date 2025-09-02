@@ -7,6 +7,9 @@ import { uploadOnCloudinary } from "../utils/cloudinary";
 import fs from "fs"
 import { File, IFile } from "../models/file";
 import { Event } from "../models/event";
+import { userType } from "../zod/user.zod";
+import { Form } from "../models/form";
+import { createEventSchema } from "../zod/createEvent.zod";
 
 const createCategory = async (category: string):Promise<string | undefined> => {
     try{
@@ -75,33 +78,78 @@ export const createNotice = async (req: Request, res: Response) => {
 }
 
 
-export const createEvent = async (req: Request, res: Response, next: NextFunction) => {
+
+export const cloneForm = async (req: Request, res: Response) => {
     try{
-        const { name, description, date, category } = req.body as { name: string, description: string, date: string, category: string};
-        console.log("controller reached",req.body);
 
-        const { user } = (req as any);
+        const { user } = (req as any) as { user: userType };
+        const { formId } = req.body;
+        const { page, limit, mine } = req.query;
 
-        if(!name || !description || !date) {
-            return res.status(400).json({
+
+        if(!page || !limit || (limit<'1' || page<'1') || !formId || (mine!='false' && mine!='true')){
+            res.status(400).json({
                 success: false,
-                message: "missing fields are required"
+                message: "invalid request"
+            });
+            return;
+        }
+
+        const skip: number = (Number(page)-1)*(Number(limit));
+
+        if(mine == 'true') {
+            const formData = await Form.find({_id: user._id}).skip(skip).limit(Number(limit)).lean();
+            res.status(200).json({
+                success: true,
+                message: "forms fetched successfully",
+                data: formData
+            });
+            return;
+        } else{
+            const myData = await Form.find({_id: user._id}).skip(skip).limit(Number(limit));
+            const formIds = myData.map((forms)=>forms._id.toString());
+            
+            const formData = await Form.find({
+                _id: { $nin: formIds}
+            }).skip(skip).limit(Number(limit)).lean();
+
+            res.status(200).json({
+                success: true,
+                message: "forms fetched successfully",
+                data: formData
+            });
+            return;
+        }
+
+    } catch(error){
+        console.log("internal server error: ",error);
+        res.status(500).json({
+            success: false,
+            message: "internal server error"
+        });
+        return;
+    }
+}
+
+export const createEvent = async (req: Request, res: Response) => {
+    try{
+        const { user } = (req as any) as { user: userType };
+
+        const { date } = req.body;
+        const newDate = new Date(date);
+        req.body.date = newDate;
+
+        const parsedData = createEventSchema.parse(req.body);
+
+        let formDoc = null;
+        if (parsedData.form) {
+            formDoc = await Form.create({
+                name: parsedData.form.name,
+                fields: parsedData.form.fields,
+                createdBy: user._id,
             });
         }
-        
-        const parsedDate = new Date(date);
-        if(isNaN(parsedDate.getTime())) {
-            return res.status(400).json({
-                success: false,
-                message: "invalid date format"
-            });
-        }
-        if(parsedDate<=new Date()) {
-            return res.status(400).json({
-                success: false,
-                message: "event date must be in future"
-            });
-        }
+
 
         const files = req.files;
         const fileDocs = [];
@@ -114,7 +162,7 @@ export const createEvent = async (req: Request, res: Response, next: NextFunctio
                     const url = await uploadOnCloudinary(file.path);
                     console.log("url: ",url)
                      
-                    fs.unlinkSync(file.path);
+                    fs.promises.unlink(file.path);
 
                     const savedFile: IFile = await File.create({
                         url,
@@ -133,17 +181,21 @@ export const createEvent = async (req: Request, res: Response, next: NextFunctio
                 }
             }
         }
+
+        const category = parsedData.category || "others"
         const updatedCategory = await createCategory(category);
         console.log("updated category",updatedCategory);
+
         const createdEvent = await Event.create({
-            name,
-            description,
-            date,
-            category: updatedCategory || "others",
+            name: parsedData.name,
+            description: parsedData.description,
+            date: parsedData.date,
+            category,
             createdBy: user._id,
-            files: fileDocs
+            files: fileDocs,
+            form: formDoc?._id
         });
-        console.log("RES",createdEvent)
+        console.log("created event: ",createdEvent)
         res.status(201).json({
             success: true,
             message: "event created successfully",
@@ -152,7 +204,15 @@ export const createEvent = async (req: Request, res: Response, next: NextFunctio
         return;
 
     } catch(error){
-        console.log("ERROR",error);
+        console.log(error);
+        if(error instanceof z.ZodError){
+            res.status(400).json({
+                success: false,
+                message: "the data is invalid",
+                error: error
+            });
+            return;
+        }
         res.status(500).json({
             success: false,
             message: "internal server error",

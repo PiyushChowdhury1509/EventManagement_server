@@ -1,6 +1,14 @@
-import mongoose from 'mongoose'
+import mongoose, { Types } from 'mongoose'
 
-const registrationSchema = new mongoose.Schema({
+export interface IRegistration extends Document {
+    student: Types.ObjectId,
+    event: Types.ObjectId,
+    registeredAt: Date,
+    form?: Types.ObjectId,
+    responses?: Types.ObjectId[]
+};
+
+const registrationSchema = new mongoose.Schema<IRegistration>({
     student: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -17,7 +25,7 @@ const registrationSchema = new mongoose.Schema({
 
     registeredAt: {
         type: Date,
-        default: Date.now
+        default: Date.now()
     },
 
     form: {

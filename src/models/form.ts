@@ -1,6 +1,22 @@
-import mongoose from "mongoose";
+import mongoose, { Types, Document } from "mongoose";
 
-const formSchema = new mongoose.Schema({
+interface FormField {
+  label: string;
+  type: string;
+  options?: string[];
+  required?: boolean;
+}
+
+export interface IForm extends Document {
+  name: string;
+  fields: FormField[];
+  createdBy: Types.ObjectId; 
+  createdOn?: Date;
+  createdAt?: Date; 
+  updatedAt?: Date; 
+}
+
+const formSchema = new mongoose.Schema<IForm>({
     name: { type: String, required: true },
     fields: [
       {
@@ -20,6 +36,12 @@ const formSchema = new mongoose.Schema({
       ref: "Admin", 
       required: true,
     },
+    createdOn: {
+      type: Date,
+      default: Date.now()
+    }
   },{ timestamps: true });
+
+  formSchema.index({ createdOn: 1 });
 
   export const Form = mongoose.model('Form', formSchema);
