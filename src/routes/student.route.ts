@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { studentAuth } from "../middlewares/userAuth";
-import { getNotices, addComment, handleLike, deleteComment, fetchEvents, registerEvent, fetchProfile,
+import { getNotices, addComment, handleLike, fetchEvents, registerEvent, fetchProfile,
     editProfile, getParticularResource, fetchAdminResources
  } from "../controllers/student.controller";
 import { upload } from "../middlewares/multer";
@@ -20,7 +20,7 @@ studentRouter.post('/handleLike/:like/:targetType/:targetId',studentAuth,handleL
 
 //comment apis
 studentRouter.post('/comment/add/:targetType/:targetId',studentAuth,addComment);
-studentRouter.post('/comment/delete/:targetId',studentAuth, deleteComment);
+//studentRouter.post('/comment/delete/:targetId',studentAuth, deleteComment);
 
 studentRouter.post('/register/event', studentAuth, registerEvent);
 

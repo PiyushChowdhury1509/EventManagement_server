@@ -1,6 +1,18 @@
-import mongoose from "mongoose";
+import mongoose, { Types, Document } from "mongoose";
 
-const commentSchema = new mongoose.Schema({
+interface IComment extends Document {
+    content: string,
+    createdBy: Types.ObjectId,
+    parentId?: Types.ObjectId,
+    targetType: string,
+    targetPostId: Types.ObjectId,
+    depth: number,
+    likeCount: number,
+    commentCount: 0,
+    mediaUrls: string[],
+}
+
+const commentSchema = new mongoose.Schema<IComment>({
     content: {
         type: String,
         required: true,
@@ -21,7 +33,7 @@ const commentSchema = new mongoose.Schema({
         enum: ["event", "notice"],
         required: true
     },
-    target: {
+    targetPostId: {
         type: mongoose.Schema.Types.ObjectId,
         required: true
     },
@@ -32,7 +44,12 @@ const commentSchema = new mongoose.Schema({
     likeCount: {
         type: Number,
         default: 0
-    }
+    },
+    commentCount: {
+        type: Number,
+        default: 0
+    },
+    mediaUrls: [{ type: String }]
 }, { timestamps: true });
 
-export const Comment = mongoose.model('Comment',commentSchema);
+export const Comment = mongoose.model<IComment>('Comment',commentSchema);

@@ -16,3 +16,8 @@ export enum NoticeStatusType {
     UPCOMING = "upcoming",
     URGENT = "urgent",
 }
+
+export enum PostType {
+    EVENT = "event",
+    NOTICE = "notice"
+}
