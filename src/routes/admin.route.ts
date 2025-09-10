@@ -3,11 +3,15 @@ import { createNotice, createEvent } from "../controllers/admin.controller";
 import { adminAuth } from "../middlewares/userAuth";
 import { upload } from "../middlewares/multer";
 
-
 const adminRouter = Router();
 
-adminRouter.post('/createNotice',adminAuth, createNotice);
+adminRouter.post("/createNotice", adminAuth, createNotice);
 
-adminRouter.post('/createEvent', upload.array("files",10), createEvent);
+adminRouter.post(
+  "/createEvent",
+  upload.array("files", 10),
+  adminAuth,
+  createEvent
+);
 
 export default adminRouter;

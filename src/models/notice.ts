@@ -1,15 +1,16 @@
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 export interface INotice {
   _id: string;
   name: string;
   content: string;
   category: string;
-  createdBy: string;
-  likeCount: number,
-  terminationDate: Date;
+  createdBy: Types.ObjectId;
+  likeCount: number;
+  commentCount: number;
+  date: Date;
 }
-const noticeSchema = new mongoose.Schema(
+const noticeSchema = new mongoose.Schema<INotice>(
   {
     name: {
       type: String,
@@ -19,8 +20,8 @@ const noticeSchema = new mongoose.Schema(
     },
     content: String,
     category: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
+      type: String,
+      default: "others",
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -29,11 +30,11 @@ const noticeSchema = new mongoose.Schema(
     },
     likeCount: {
       type: Number,
-      default: 0
+      default: 0,
     },
     commentCount: {
       type: Number,
-      default: 0
+      default: 0,
     },
     date: {
       type: Date,

@@ -1,34 +1,38 @@
-import mongoose, { Document} from 'mongoose'
+import mongoose, { Document, Types } from "mongoose";
 
 export interface IFile extends Document {
+  _id: Types.ObjectId;
   url: string;
-  type: string; 
-  name: string; 
+  type: string;
+  name: string;
   size: number;
   uploadedAt: Date;
 }
 
-const fileSchema = new mongoose.Schema<IFile>({
+const fileSchema = new mongoose.Schema<IFile>(
+  {
     url: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     type: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     name: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     size: {
-        type: Number,
-        required: true
+      type: Number,
+      required: true,
     },
     uploadedAt: {
-        type: Date,
-        default: Date.now()
-    }
-}, { timestamps: true });
+      type: Date,
+      default: Date.now(),
+    },
+  },
+  { timestamps: true }
+);
 
-export const File = mongoose.model('File', fileSchema);
+export const File = mongoose.model("File", fileSchema);
