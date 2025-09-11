@@ -1,9 +1,17 @@
 import { z } from "zod";
 
-
 const formFieldSchema = z.object({
   label: z.string().min(1, "Label is required"),
-  type: z.enum(["text", "textarea", "number", "date", "select", "checkbox", "radio", "file"]),
+  type: z.enum([
+    "text",
+    "textarea",
+    "number",
+    "date",
+    "select",
+    "checkbox",
+    "radio",
+    "file",
+  ]),
   options: z.array(z.string()).optional(),
   required: z.boolean().optional().default(false),
 });
@@ -17,7 +25,8 @@ export const createEventSchema = z.object({
   name: z.string().min(1, "Event name is required").max(255),
   description: z.string().optional(),
   date: z.preprocess(
-    (val) => (typeof val === "string" || val instanceof Date ? new Date(val) : val),
+    (val) =>
+      typeof val === "string" || val instanceof Date ? new Date(val) : val,
     z.date({ required_error: "Date is required" })
   ),
   category: z.string().optional(),

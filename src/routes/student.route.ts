@@ -16,7 +16,7 @@ import { upload } from "../middlewares/multer";
 const studentRouter = Router();
 
 studentRouter.get("/getNotices", getNotices);
-studentRouter.get("/getEvents", studentAuth, fetchEvents);
+studentRouter.get("/getEvents", fetchEvents);
 studentRouter.get(
   "/getParticularResource/:resourceId",
   studentAuth,

@@ -30,6 +30,9 @@ app.use("/api/v1/student", studentRouter);
 import eventRouter from "./routes/event.route";
 app.use("/api/v1/event", eventRouter);
 
+import commentRouter from "./routes/comment.routes";
+app.use("/api/v1/comment", commentRouter);
+
 connectDB().then(() => {
   const PORT = process.env.PORT;
   app.listen(PORT, () => {
