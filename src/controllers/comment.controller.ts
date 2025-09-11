@@ -4,6 +4,7 @@ import { userType } from "../zod/user.zod";
 import { Notice } from "../models/notice";
 import { uploadOnCloudinary } from "../utils/cloudinary";
 import { Comment } from "../models/comment";
+import mongoose from "mongoose";
 
 export const addComment = async (req: Request, res: Response) => {
   try {
@@ -134,6 +135,61 @@ export const addComment = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "internal server error",
+    });
+    return;
+  }
+};
+
+export const getComments = async (req: Request, res: Response) => {
+  try {
+    const { postType } = req.params;
+    const { postId, page = "1", limit = "10" } = req.query;
+
+    if (!postType || !postId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required query parameters",
+      });
+    }
+
+    const postObjectId = new mongoose.Types.ObjectId(postId as string);
+
+    const allComments: any[] = await Comment.find({
+      targetPostId: postObjectId,
+      targetType: postType,
+    })
+      .populate("createdBy", "name profilePhotoUrl")
+      .sort({ likeCount: -1, createdAt: -1 })
+      .lean();
+
+    const commentMap: Record<string, any> = {};
+    allComments.forEach((comment) => {
+      comment.replies = [];
+      commentMap[comment._id.toString()] = comment;
+    });
+
+    const commentTree: any[] = [];
+    allComments.forEach((comment) => {
+      if (comment.parentId) {
+        const parent = commentMap[comment.parentId.toString()];
+        if (parent) {
+          parent.replies.push(comment);
+        }
+      } else {
+        commentTree.push(comment);
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: commentTree,
+    });
+  } catch (error) {
+    console.log("error: ", error);
+    res.status(500).json({
+      success: false,
+      message: "internal server error",
+      error: error,
     });
     return;
   }
